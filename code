@@ -1,0 +1,203 @@
+#include <Servo.h>
+
+//Servo Objects
+Servo Servo_0;
+Servo Servo_1;
+Servo Servo_2;
+Servo Servo_3;
+//Potentiometer Objects
+int Pot_0;
+int Pot_1;
+int Pot_2; 
+int Pot_3;
+
+//Variable to store Servo Position
+int Servo_0_Pos;
+int Servo_1_Pos;
+int Servo_2_Pos;
+int Servo_3_Pos;
+
+
+//Variable to store Previous position values
+int Prev_0_Pos; 
+int Prev_1_Pos; 
+int Prev_2_Pos;
+int Prev_3_Pos; 
+
+//Variable to store Current position values
+int Current_0_Pos; 
+int Current_1_Pos; 
+int Current_2_Pos; 
+int Current_3_Pos;
+
+
+int Servo_Position; //Stores the angle 
+int Servo_Number; //Stores no of servo
+
+int Storage[600]; //Array to store data (Increasing array size will consume more memory)
+int Index = 0; // Array index starts from 0th position
+char data = 0; //variable to store data from serial input.
+void setup() 
+{
+  Serial.begin(9600); //For Serial communication between arduino and IDE.
+
+  //Servo objects are attached to PWM pins.
+  Servo_0.attach(3);
+  Servo_1.attach(5);
+  Servo_2.attach(6);
+  Servo_3.attach(9);
+
+
+  //Servos are set to 100 position at initialization. 
+  Servo_0.write(100);
+  Servo_1.write(100);
+  Servo_2.write(100);
+  Servo_3.write(100);
+  
+
+  Serial.println("Press 'R' to Record and 'P' to play"); 
+}
+void Map_Pot()
+{
+ /* The servos rotate at 180 degrees
+    but to using it to limits is not
+    a good idea as it makes the servos buzz continuously
+    which is annoying so we limit the servo to move
+    between: 1-179 */
+
+   Pot_0 = analogRead(A0);               // Read input from pot and store it in the Variable Pot_0.
+   Servo_0_Pos = map(Pot_0, 0, 1023, 1, 179); //Map servos as per the value between 0 to 1023
+   Servo_0.write(Servo_0_Pos);           //Move the servo to that position.
+   
+   Pot_1 = analogRead(A1);
+   Servo_1_Pos = map(Pot_1, 0, 1023, 1, 179);
+   Servo_1.write(Servo_1_Pos); 
+   
+   Pot_2 = analogRead(A2); 
+   Servo_2_Pos = map(Pot_2, 0, 1023, 1, 179);
+   Servo_2.write(Servo_2_Pos);
+   
+   Pot_3 = analogRead(A3); 
+   Servo_3_Pos = map(Pot_3, 0, 1023, 1, 179);
+   Servo_3.write(Servo_3_Pos);
+   
+}
+void loop() 
+{
+   Map_Pot();  //Function call to read pot values
+   
+   while (Serial.available() > 0) 
+   {
+     data = Serial.read();
+     if (data == 'R')
+     Serial.println("Recording Moves...");
+     if (data == 'P')
+     Serial.println("Playing Recorded Moves...");
+   }
+
+  if (data == 'R') //If 'R' is entered, start recording.
+  {
+
+    //Store the values in a variable
+    Prev_0_Pos = Servo_0_Pos;
+    Prev_1_Pos = Servo_1_Pos;
+    Prev_2_Pos = Servo_2_Pos;
+    Prev_3_Pos = Servo_3_Pos;
+  
+   
+    Map_Pot();  // Map  function recalled for comparison 
+    
+    if (abs(Prev_0_Pos == Servo_0_Pos)) // absolute value is obtained by comparing 
+    {
+      Servo_0.write(Servo_0_Pos); // If values match servo is repositioned 
+      if (Current_0_Pos != Servo_0_Pos)  // If values don't match
+    {
+        Storage[Index] = Servo_0_Pos + 0; // Value is added to array 
+        Index++;  // Index value incremented by 1 
+      }
+      Current_0_Pos = Servo_0_Pos; 
+    }
+
+    /* Similarly the value comparison is done for all the servos, +100 is added every for entry 
+       as a differential value. */
+
+    if (abs(Prev_1_Pos == Servo_1_Pos))
+    {
+      Servo_1.write(Servo_1_Pos);
+      if (Current_1_Pos != Servo_1_Pos)
+      {
+        Storage[Index] = Servo_1_Pos + 100; 
+        Index++;
+    }
+     Current_1_Pos = Servo_1_Pos;
+   }
+   
+
+   if (abs(Prev_2_Pos == Servo_2_Pos))
+   {
+     Servo_2.write(Servo_2_Pos);
+     if (Current_2_Pos != Servo_2_Pos)
+     {
+       Storage[Index] = Servo_2_Pos + 200;  
+       Index++;
+     }
+    Current_2_Pos = Servo_2_Pos;
+   }
+
+   
+   if (abs(Prev_3_Pos == Servo_3_Pos))
+   {
+     Servo_3.write(Servo_3_Pos); 
+     if (Current_3_Pos != Servo_3_Pos)
+     {
+       Storage[Index] = Servo_3_Pos + 300;  
+       Index++;
+     }
+     Current_3_Pos = Servo_3_Pos;   
+   }  
+  
+ 
+  /* Values are printed on serial monitor, '\t' is for displaying values in tabular format */   
+  Serial.print(Servo_0_Pos);  
+  Serial.print(" \t "); 
+  Serial.print(Servo_1_Pos); 
+  Serial.print(" \t "); 
+  Serial.print(Servo_2_Pos); 
+  Serial.print(" \t "); 
+  Serial.print(Servo_3_Pos); 
+  Serial.print ("Index = "); 
+  Serial.println(Index); 
+  delay(50); 
+  }
+
+  if (data == 'P') //IF 'P' is entered , Start playing recorded moves.
+  {
+    for (int i = 0; i < Index; i++) //Traverse the array using for loop
+    {
+      Servo_Number = Storage[i] / 100;  // Finds number of servo
+      Servo_Position = Storage[i] % 100; // Finds position of servo
+
+      switch(Servo_Number) 
+      { 
+        case 0:
+             Servo_0.write(Servo_Position);
+             break;
+
+        case 1:
+             Servo_1.write(Servo_Position);
+             break;
+
+        case 2:
+             Servo_2.write(Servo_Position);
+             break;      
+
+        case 3:
+             Servo_3.write(Servo_Position);
+             break;
+
+       
+       }
+     delay(50);
+   }
+ }
+}
